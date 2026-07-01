@@ -12,6 +12,15 @@
 #include <PubSubClient.h>
 #include "ui/vars.h"
 
+// --- Configuration ---
+const char* ssid = <SSID>;
+const char* password = <PASS>;
+
+const char* mqtt_server = <MQTT-Server>;
+const int mqtt_port = <MQTT-Port>; 
+const char* mqtt_user = <MQTT-Username>;
+const char* mqtt_pass = <MQTT-Password>;
+
 bool relay = false;
 
 float volt;
@@ -117,15 +126,6 @@ static void touchpad_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
         data->state = LV_INDEV_STATE_REL;
     }
 }
-
-// --- Configuration ---
-const char* ssid = "ssid";
-const char* password = "12345678";
-
-const char* mqtt_server = "xbcf2a20.ala.asia-southeast1.emqxsl.com";
-const int mqtt_port = 8883; 
-const char* mqtt_user = "paijokompa";
-const char* mqtt_pass = "paijokompa";
 
 // Notice the topics are swapped compared to the first ESP32!
 const char* subTopic = "esp32/sensors/data"; // We listen to the PZEM here
