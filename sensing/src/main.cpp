@@ -1,4 +1,3 @@
-
 #define RELAY_PIN 23
 
 #include <Arduino.h>
@@ -8,13 +7,13 @@
 #include <PZEM004Tv30.h>
 
 // --- Configuration ---
-const char* ssid = "ssid";
-const char* password = "12345678";
+const char* ssid = <SSID>;
+const char* password = <PASS>;
 
-const char* mqtt_server = "xbcf2a20.ala.asia-southeast1.emqxsl.com";
-const int mqtt_port = 8883; 
-const char* mqtt_user = "paijokompa";
-const char* mqtt_pass = "paijokompa";
+const char* mqtt_server = <MQTT-Server>;
+const int mqtt_port = <MQTT-Port>; 
+const char* mqtt_user = <MQTT-Username>;
+const char* mqtt_pass = <MQTT-Password>;
 const char* pubTopic = "esp32/sensors/data";
 const char* subTopic = "esp32/commands";
 
