@@ -13,63 +13,72 @@
 #include "ui/vars.h"
 
 // --- Configuration ---
-const char* ssid = <SSID>;
-const char* password = <PASS>;
+const char* ssid = "<Network SSID>";
+const char* password = "<Network Password>";
 
-const char* mqtt_server = <MQTT-Server>;
-const int mqtt_port = <MQTT-Port>; 
-const char* mqtt_user = <MQTT-Username>;
-const char* mqtt_pass = <MQTT-Password>;
+const char* mqtt_server = "<MQTT_Server>"; 
+const int mqtt_port = 8883;                 //MQTT_PORT
+const char* mqtt_user = "<MQTT_Username>";
+const char* mqtt_pass = "<MQTT_Password>";
+const char* pubTopic = "esp32/sensors";     // We listen to the PZEM here
+const char* subTopic = "esp32/commands";   // We send Relay commands here
 
 bool relay = false;
 
-float volt;
-float get_var_volt() {
+char volt[100] = { 0 };
+const char *get_var_volt() {
     return volt;
 }
-void set_var_volt(float value) {
-    volt = value;
+void set_var_volt(const char *value) {
+    strncpy(volt, value, sizeof(volt) / sizeof(char));
+    volt[sizeof(volt) / sizeof(char) - 1] = 0;
 }
 
-float ampere;
-float get_var_ampere() {
+char ampere[100] = { 0 };
+const char *get_var_ampere() {
     return ampere;
 }
-void set_var_ampere(float value) {
-    ampere = value;
+void set_var_ampere(const char *value) {
+    strncpy(ampere, value, sizeof(ampere) / sizeof(char));
+    ampere[sizeof(ampere) / sizeof(char) - 1] = 0;
 }
 
-float watt;
-float get_var_watt() {
+char watt[100] = { 0 };
+const char *get_var_watt() {
     return watt;
 }
-void set_var_watt(float value) {
-    watt = value;
+void set_var_watt(const char *value) {
+    strncpy(watt, value, sizeof(watt) / sizeof(char));
+    watt[sizeof(watt) / sizeof(char) - 1] = 0;
 }
 
-float watthour;
-float get_var_watthour() {
+char watthour[100] = { 0 };
+const char *get_var_watthour() {
     return watthour;
 }
-void set_var_watthour(float value) {
-    watthour = value;
+void set_var_watthour(const char *value) {
+    strncpy(watthour, value, sizeof(watthour) / sizeof(char));
+    watthour[sizeof(watthour) / sizeof(char) - 1] = 0;
 }
 
-float hertz;
-float get_var_hertz() {
+char hertz[100] = { 0 };
+const char *get_var_hertz() {
     return hertz;
 }
-void set_var_hertz(float value) {
-    hertz = value;
+void set_var_hertz(const char *value) {
+    strncpy(hertz, value, sizeof(hertz) / sizeof(char));
+    hertz[sizeof(hertz) / sizeof(char) - 1] = 0;
 }
 
-float powerfactor;
-float get_var_powerfactor() {
+char powerfactor[100] = { 0 };
+const char *get_var_powerfactor() {
     return powerfactor;
 }
-void set_var_powerfactor(float value) {
-    powerfactor = value;
+void set_var_powerfactor(const char *value) {
+    strncpy(powerfactor, value, sizeof(powerfactor) / sizeof(char));
+    powerfactor[sizeof(powerfactor) / sizeof(char) - 1] = 0;
 }
+
 
 bool network;
 bool get_var_network() {
@@ -127,10 +136,6 @@ static void touchpad_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
     }
 }
 
-// Notice the topics are swapped compared to the first ESP32!
-const char* subTopic = "esp32/sensors/data"; // We listen to the PZEM here
-const char* pubTopic = "esp32/commands";     // We send Relay commands here
-
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
 
@@ -159,9 +164,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
     message += (char)payload[i];
   }
 
-  // Ensure it's the sensor data topic
+  Serial.print(message);
+
   if (String(topic) == subTopic) {
-    // Parse the JSON data
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, message);
 
@@ -177,14 +182,32 @@ void callback(char* topic, byte* payload, unsigned int length) {
     float power = doc["power"];
     float energy = doc["energy"];
     float frequency = doc["frequency"];
-    float pf = doc["pf"]; // Power Factor
+    float pf = doc["pf"]; 
 
-    set_var_volt(voltage);
-    set_var_ampere(current);
-    set_var_watt(power);
-    set_var_watthour(energy);
-    set_var_hertz(frequency);
-    set_var_powerfactor(pf);
+    char buffer[10];
+    char format[10];
+
+    dtostrf(voltage, 4, 1, buffer);
+    snprintf(format, sizeof(format), "%s V", buffer);
+    set_var_volt(format);
+
+    dtostrf(current, 4, 3, buffer);
+    snprintf(format, sizeof(format), "%s A", buffer);
+    set_var_ampere(format);
+
+    dtostrf(power, 4, 1, buffer);
+    snprintf(format, sizeof(format), "%s W", buffer);
+    set_var_watt(format);
+
+    dtostrf(energy, 4, 3, buffer);
+    set_var_watthour(buffer);
+
+    dtostrf(frequency, 4, 1, buffer);
+    snprintf(format, sizeof(format), "%s Hz", buffer);
+    set_var_hertz(format);
+
+    dtostrf(pf, 4, 2, buffer);
+    set_var_powerfactor(buffer);
   }
 }
 
@@ -205,7 +228,6 @@ void NetworkTask(void *pvParameters) {
 
   for(;;) {
     if (!client.connected() && WiFi.status() == WL_CONNECTED) {
-      // Must generate a UNIQUE client ID for this second board
       String clientId = "ESP32-Monitor-" + String(random(0xffff), HEX);
       if (client.connect(clientId.c_str(), mqtt_user, mqtt_pass)) {
         Serial.println("EMQX Connected! Listening for PZEM data...");
@@ -223,7 +245,6 @@ void NetworkTask(void *pvParameters) {
   }
 }
 
-// Task to read your typing in the Serial Monitor and send it to the Relay
 void DisplayTask(void *pvParameters) {
   ui_init();
   for (;;) { 

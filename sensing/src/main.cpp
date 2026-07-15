@@ -1,3 +1,4 @@
+#define REFRESH_DELAY 1 //In Seconds
 #define RELAY_PIN 23
 
 #include <Arduino.h>
@@ -7,15 +8,15 @@
 #include <PZEM004Tv30.h>
 
 // --- Configuration ---
-const char* ssid = <SSID>;
-const char* password = <PASS>;
+const char* ssid = "<Network SSID>";
+const char* password = "<Network Password>";
 
-const char* mqtt_server = <MQTT-Server>;
-const int mqtt_port = <MQTT-Port>; 
-const char* mqtt_user = <MQTT-Username>;
-const char* mqtt_pass = <MQTT-Password>;
-const char* pubTopic = "esp32/sensors/data";
-const char* subTopic = "esp32/commands";
+const char* mqtt_server = "<MQTT_Server>"; 
+const int mqtt_port = 8883;                 //MQTT_PORT
+const char* mqtt_user = "<MQTT_Username>";
+const char* mqtt_pass = "<MQTT_Password>";
+const char* pubTopic = "esp32/sensors";     // We listen to the PZEM here
+const char* subTopic = "esp32/commands";   // We send Relay commands here
 
 // --- PZEM-004T Setup ---
 // Using ESP32 Hardware Serial2 (RX = GPIO 16, TX = GPIO 17)
@@ -30,26 +31,19 @@ PubSubClient client(espClient);
 TaskHandle_t NetworkTaskHandle;
 TaskHandle_t SensorTaskHandle;
 
-// Callback function (Runs inside the Network Task)
-// Callback function (Runs when a message is received)
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] Payload: ");
 
-  // 1. Convert the payload into a String
   String message = "";
   for (unsigned int i = 0; i < length; i++) {
     message += (char)payload[i];
   }
   Serial.println(message);
 
-  // 2. Check if the message is on our command topic
   if (String(topic) == subTopic) {
-    
-    // Clean up the string (removes accidental spaces or newlines)
     message.trim();
-    // Convert to uppercase so "on", "On", and "ON" all work
     message.toUpperCase(); 
 
     // 3. Toggle the relay
@@ -110,11 +104,9 @@ void SensorTask(void *pvParameters) {
       float frequency = pzem.frequency();
       float pf = pzem.pf();
 
-      // If voltage is NaN, the sensor is not communicating properly
       if (isnan(voltage)) {
         Serial.println("Error reading PZEM-004T sensor! Check wiring.");
       } else {
-        // Construct JSON payload
         String payload = "{";
         payload += "\"voltage\":" + String(voltage, 1) + ",";
         payload += "\"current\":" + String(current, 3) + ",";
@@ -129,7 +121,7 @@ void SensorTask(void *pvParameters) {
         }
       }
     }
-    vTaskDelay(10000 / portTICK_PERIOD_MS); // Read every 10 seconds
+    vTaskDelay(REFRESH_DELAY*1000 / portTICK_PERIOD_MS); 
   }
 }
 
@@ -137,12 +129,10 @@ void setup() {
   Serial.begin(115200);
 
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, LOW); // Start with the relay turned OFF
+  digitalWrite(RELAY_PIN, LOW); 
 
   xTaskCreatePinnedToCore(NetworkTask, "NetworkTask", 8192, NULL, 1, &NetworkTaskHandle, 1);
   xTaskCreatePinnedToCore(SensorTask,"SensorTask", 4096, NULL, 1, &SensorTaskHandle, 1);
 }
 
-void loop() {
-  // Handled by FreeRTOS
-}
+void loop() {}

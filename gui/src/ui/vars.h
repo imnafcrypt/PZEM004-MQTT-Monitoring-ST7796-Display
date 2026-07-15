@@ -24,18 +24,18 @@ enum FlowGlobalVariables {
 
 // Native global variables
 
-extern float get_var_volt();
-extern void set_var_volt(float value);
-extern float get_var_ampere();
-extern void set_var_ampere(float value);
-extern float get_var_watt();
-extern void set_var_watt(float value);
-extern float get_var_watthour();
-extern void set_var_watthour(float value);
-extern float get_var_hertz();
-extern void set_var_hertz(float value);
-extern float get_var_powerfactor();
-extern void set_var_powerfactor(float value);
+extern const char *get_var_volt();
+extern void set_var_volt(const char *value);
+extern const char *get_var_ampere();
+extern void set_var_ampere(const char *value);
+extern const char *get_var_watt();
+extern void set_var_watt(const char *value);
+extern const char *get_var_watthour();
+extern void set_var_watthour(const char *value);
+extern const char *get_var_hertz();
+extern void set_var_hertz(const char *value);
+extern const char *get_var_powerfactor();
+extern void set_var_powerfactor(const char *value);
 extern bool get_var_network();
 extern void set_var_network(bool value);
 
